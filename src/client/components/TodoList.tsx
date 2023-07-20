@@ -1,5 +1,4 @@
-import type { SVGProps } from 'react'
-
+import { type SVGProps } from 'react'
 import * as Checkbox from '@radix-ui/react-checkbox'
 
 import { api } from '@/utils/client/api'
@@ -64,30 +63,62 @@ import { api } from '@/utils/client/api'
  */
 
 export const TodoList = () => {
-  const { data: todos = [] } = api.todo.getAll.useQuery({
+  const data = api.todo.getAll.useQuery({
     statuses: ['completed', 'pending'],
   })
+  const { data: todos = [] } = data
+
+  const mutationStatus = api.todoStatus.update.useMutation({
+    onSuccess: () => {
+      data.refetch()
+    },
+    onError: () => {
+      // handle error
+    },
+  })
+
+  const onCheckItem = async (todoId: number, value: Checkbox.CheckedState) => {
+    mutationStatus.mutate({
+      todoId,
+      status: value ? 'completed' : 'pending',
+    })
+  }
 
   return (
     <ul className="grid grid-cols-1 gap-y-3">
-      {todos.map((todo) => (
-        <li key={todo.id}>
-          <div className="flex items-center rounded-12 border border-gray-200 px-4 py-3 shadow-sm">
-            <Checkbox.Root
-              id={String(todo.id)}
-              className="flex h-6 w-6 items-center justify-center rounded-6 border border-gray-300 focus:border-gray-700 focus:outline-none data-[state=checked]:border-gray-700 data-[state=checked]:bg-gray-700"
-            >
-              <Checkbox.Indicator>
-                <CheckIcon className="h-4 w-4 text-white" />
-              </Checkbox.Indicator>
-            </Checkbox.Root>
+      {(todos || []).map((todo) => {
+        const _status = todo.status === 'completed' ? true : false
 
-            <label className="block pl-3 font-medium" htmlFor={String(todo.id)}>
-              {todo.body}
-            </label>
-          </div>
-        </li>
-      ))}
+        return (
+          <li key={todo.id}>
+            <div
+              className={`flex items-center rounded-12 border border-gray-200 px-4 py-3 shadow-sm ${
+                _status ? 'bg-gray-50' : ''
+              }`}
+            >
+              <Checkbox.Root
+                id={String(todo.id)}
+                className="flex h-6 w-6 items-center justify-center rounded-6 border border-gray-300 focus:border-gray-700 focus:outline-none data-[state=checked]:border-gray-700 data-[state=checked]:bg-gray-700"
+                defaultChecked={_status}
+                onCheckedChange={(value) => onCheckItem(todo.id, value)}
+              >
+                <Checkbox.Indicator>
+                  <CheckIcon className="h-4 w-4 text-white" />
+                </Checkbox.Indicator>
+              </Checkbox.Root>
+
+              <label
+                className={`lock pl-3 font-medium ${
+                  _status ? 'text-gray-500' : ''
+                } ${_status ? 'line-through' : ''}`}
+                htmlFor={String(todo.id)}
+              >
+                {todo.body}
+              </label>
+            </div>
+          </li>
+        )
+      })}
     </ul>
   )
 }
