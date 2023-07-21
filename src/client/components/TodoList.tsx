@@ -1,7 +1,10 @@
 import { type SVGProps } from 'react'
 import * as Checkbox from '@radix-ui/react-checkbox'
+import { useAutoAnimate } from '@formkit/auto-animate/react'
 
 import { api } from '@/utils/client/api'
+
+import { Tab } from './MyTab'
 
 /**
  * QUESTION 3:
@@ -62,13 +65,28 @@ import { api } from '@/utils/client/api'
  *  - https://auto-animate.formkit.com
  */
 
-export const TodoList = () => {
+interface Props {
+  tab?: Tab
+}
+
+export const TodoList = ({ tab = Tab.ALL }: Props) => {
+  const [parent] = useAutoAnimate({
+    // currently, I disable animation on my window and ubuntu, so I need this "true" to always enable animation for todos
+    disrespectUserMotionPreference: true,
+    duration: 150,
+  })
+
   const data = api.todo.getAll.useQuery({
-    statuses: ['completed', 'pending'],
+    statuses: tab === Tab.ALL ? [Tab.COMPLETED, Tab.PENDING] : [tab],
   })
   const { data: todos = [] } = data
 
-  const mutationStatus = api.todoStatus.update.useMutation({
+  // useEffect(() => {
+  //   console.log(tab)
+  //   api.todo.getAll.useQuery
+  // }, [tab])
+
+  const mutationStatusApi = api.todoStatus.update.useMutation({
     onSuccess: () => {
       data.refetch()
     },
@@ -77,44 +95,67 @@ export const TodoList = () => {
     },
   })
 
-  const onCheckItem = async (todoId: number, value: Checkbox.CheckedState) => {
-    mutationStatus.mutate({
+  const deleteApi = api.todo.delete.useMutation({
+    onSuccess: () => {
+      data.refetch()
+    },
+    onError: () => {
+      // handle error
+    },
+  })
+
+  const onCheckItem = (todoId: number, value: Checkbox.CheckedState) => {
+    mutationStatusApi.mutate({
       todoId,
       status: value ? 'completed' : 'pending',
     })
   }
 
+  const onDeleteTodo = (todoId: number) => {
+    deleteApi.mutate({ id: todoId })
+  }
+
   return (
-    <ul className="grid grid-cols-1 gap-y-3">
+    <ul className="grid grid-cols-1 gap-y-3" ref={parent}>
       {(todos || []).map((todo) => {
         const _status = todo.status === 'completed' ? true : false
 
         return (
           <li key={todo.id}>
             <div
-              className={`flex items-center rounded-12 border border-gray-200 px-4 py-3 shadow-sm ${
-                _status ? 'bg-gray-50' : ''
+              className={`flex items-center justify-between rounded-12 border border-gray-200 px-4 py-3 shadow-sm ${
+                _status ? 'bg-gray-50' : null
               }`}
             >
-              <Checkbox.Root
-                id={String(todo.id)}
-                className="flex h-6 w-6 items-center justify-center rounded-6 border border-gray-300 focus:border-gray-700 focus:outline-none data-[state=checked]:border-gray-700 data-[state=checked]:bg-gray-700"
-                defaultChecked={_status}
-                onCheckedChange={(value) => onCheckItem(todo.id, value)}
-              >
-                <Checkbox.Indicator>
-                  <CheckIcon className="h-4 w-4 text-white" />
-                </Checkbox.Indicator>
-              </Checkbox.Root>
+              <div className="flex">
+                <Checkbox.Root
+                  id={String(todo.id)}
+                  className="flex h-6 w-6 items-center justify-center rounded-6 border border-gray-300 focus:border-gray-700 focus:outline-none data-[state=checked]:border-gray-700 data-[state=checked]:bg-gray-700"
+                  defaultChecked={_status}
+                  onCheckedChange={(value) => onCheckItem(todo.id, value)}
+                >
+                  <Checkbox.Indicator>
+                    <CheckIcon className="h-4 w-4 text-white" />
+                  </Checkbox.Indicator>
+                </Checkbox.Root>
 
-              <label
-                className={`lock pl-3 font-medium ${
-                  _status ? 'text-gray-500' : ''
-                } ${_status ? 'line-through' : ''}`}
-                htmlFor={String(todo.id)}
-              >
-                {todo.body}
-              </label>
+                <label
+                  className={`lock pl-3 font-medium ${
+                    _status ? 'text-gray-500' : null
+                  } ${_status ? 'line-through' : null}`}
+                  htmlFor={String(todo.id)}
+                >
+                  {todo.body}
+                </label>
+              </div>
+              <div>
+                <XMarkIcon
+                  width={24}
+                  height={24}
+                  cursor={'pointer'}
+                  onClick={() => onDeleteTodo(todo.id)}
+                />
+              </div>
             </div>
           </li>
         )

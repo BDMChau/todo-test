@@ -1,4 +1,5 @@
 import { type Config } from 'tailwindcss'
+import plugin from 'tailwindcss/plugin'
 
 export default {
   content: ['./src/**/*.{js,ts,jsx,tsx}'],
@@ -28,5 +29,9 @@ export default {
       full: '9999px',
     },
   },
-  plugins: [],
+  plugins: [
+    plugin(({ addVariant }) => {
+      addVariant('data-tab-state-active', '&[data-state="active"]')
+    }),
+  ],
 } satisfies Config

@@ -1,4 +1,5 @@
 import { CreateTodoForm } from '@/client/components/CreateTodoForm'
+import { MyTab } from '@/client/components/MyTab'
 import { TodoList } from '@/client/components/TodoList'
 
 /**
@@ -25,7 +26,9 @@ const Index = () => {
         </h1>
 
         <div className="pt-10">
-          <TodoList />
+          <MyTab>
+            <TodoList />
+          </MyTab>
         </div>
 
         <div className="pt-10">
